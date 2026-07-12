@@ -4,6 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.example.skim.model.Recording
+import com.example.skim.model.SummaryItem
+import com.example.skim.model.SummarySource
+import com.example.skim.model.TranscriptChunk
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -28,6 +32,17 @@ class MainScreenTest {
               summaryItems = emptyList(),
               transcriptChunks = emptyList(),
             ),
+            Recording(
+              id = "without-audio",
+              title = "오디오 없는 녹음",
+              duration = "00:06",
+              createdAt = "방금",
+              status = "COMPLETED",
+              oneLineSummary = "오디오 없이도 근거는 확인할 수 있습니다.",
+              audioAvailable = false,
+              summaryItems = listOf(SummaryItem("summary-1", "핵심", "근거", listOf(SummarySource("chunk-1", "00:00–00:06")))),
+              transcriptChunks = listOf(TranscriptChunk("chunk-1", "00:00–00:06", "선택된 원문")),
+            ),
           ),
         ),
         onRefresh = {},
@@ -45,5 +60,14 @@ class MainScreenTest {
     composeTestRule.onNodeWithText("추가").performClick()
 
     composeTestRule.onNodeWithText("음성 파일을 선택해 업로드하세요").assertExists()
+  }
+
+  @Test
+  fun unavailableAudio_keepsTheSelectedTranscriptVisible() {
+    composeTestRule.onNodeWithText("오디오 없는 녹음").performClick()
+    composeTestRule.onNodeWithText("▶ 00:00–00:06").performClick()
+
+    composeTestRule.onNodeWithText("오디오가 없어 재생할 수 없습니다.").assertExists()
+    composeTestRule.onNodeWithText("선택한 근거").assertExists()
   }
 }

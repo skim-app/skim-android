@@ -23,6 +23,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -34,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,18 +55,27 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.provider.OpenableColumns
 import androidx.compose.ui.platform.LocalContext
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.compose.runtime.DisposableEffect
 import com.example.skim.BuildConfig
 import com.example.skim.model.Recording
 import com.example.skim.model.SummaryItem
 import com.example.skim.model.SummarySource
 import com.example.skim.model.TranscriptChunk
 import com.example.skim.theme.SkimTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 private enum class SkimScreen { List, Detail }
 private enum class MainDestination(val label: String) { Home("홈"), Add("추가"), Library("라이브러리"), Settings("설정") }
+private data class PlaybackUiState(
+    val positionMs: Long = 0,
+    val durationMs: Long? = null,
+    val isPlaying: Boolean = false,
+    val errorMessage: String? = null,
+)
 
 @Composable
 fun SkimMainRoute(viewModel: SkimMainViewModel, modifier: Modifier = Modifier) {
@@ -343,9 +354,60 @@ private fun RecordingDetailScreen(
 ) {
     var selectedTab by rememberSaveable(recording.id) { mutableIntStateOf(0) }
     var highlightedChunkId by rememberSaveable(recording.id) { mutableStateOf<String?>(null) }
+    val playbackStateHolder = remember(recording.id) { mutableStateOf(PlaybackUiState()) }
+    val playbackError = remember(recording.id) { mutableStateOf<String?>(null) }
+    val playbackState by playbackStateHolder
+    var mediaLoaded by remember(recording.id) { mutableStateOf(false) }
     val context = LocalContext.current
     val player = remember(recording.id) { ExoPlayer.Builder(context).build() }
-    DisposableEffect(player) { onDispose { player.release() } }
+    fun updatePlaybackState() {
+        playbackStateHolder.value = PlaybackUiState(
+            positionMs = player.currentPosition.coerceAtLeast(0),
+            durationMs = player.duration.takeIf { it != C.TIME_UNSET && it >= 0 },
+            isPlaying = player.isPlaying,
+            errorMessage = playbackError.value,
+        )
+    }
+    fun playFrom(positionMs: Long) {
+        if (!recording.audioAvailable) {
+            playbackError.value = "오디오가 없어 재생할 수 없습니다."
+            updatePlaybackState()
+            return
+        }
+        if (!mediaLoaded) {
+            player.setMediaItem(MediaItem.fromUri("${BuildConfig.SKIM_BASE_URL}v1/recordings/${recording.id}/audio"))
+            player.prepare()
+            mediaLoaded = true
+        }
+        player.seekTo(positionMs.coerceAtLeast(0))
+        player.play()
+        playbackError.value = null
+        updatePlaybackState()
+    }
+
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                updatePlaybackState()
+            }
+
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                playbackError.value = "오디오를 재생할 수 없습니다. 네트워크 연결과 오디오 파일을 확인해 주세요."
+                updatePlaybackState()
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+            player.release()
+        }
+    }
+    LaunchedEffect(player) {
+        while (isActive) {
+            updatePlaybackState()
+            delay(250)
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -370,6 +432,21 @@ private fun RecordingDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
+            PlaybackControls(
+                audioAvailable = recording.audioAvailable,
+                playbackState = playbackState,
+                onTogglePlayback = {
+                    if (player.isPlaying) {
+                        player.pause()
+                    } else if (mediaLoaded) {
+                        if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
+                        player.play()
+                    } else {
+                        playFrom(0)
+                    }
+                    updatePlaybackState()
+                },
+            )
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("요약") })
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("원문") })
@@ -380,12 +457,7 @@ private fun RecordingDetailScreen(
                     onSourceClick = { source ->
                         highlightedChunkId = source.chunkId
                         selectedTab = 1
-                        if (recording.audioAvailable) {
-                            player.setMediaItem(MediaItem.fromUri("${BuildConfig.SKIM_BASE_URL}v1/recordings/${recording.id}/audio"))
-                            player.prepare()
-                            player.seekTo(source.startMs)
-                            player.play()
-                        }
+                        playFrom(source.startMs)
                     },
                 )
                 1 -> TranscriptTab(recording = recording, highlightedChunkId = highlightedChunkId)
@@ -393,6 +465,54 @@ private fun RecordingDetailScreen(
         }
     }
 }
+
+@Composable
+private fun PlaybackControls(
+    audioAvailable: Boolean,
+    playbackState: PlaybackUiState,
+    onTogglePlayback: () -> Unit,
+) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("근거 오디오", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            if (!audioAvailable) {
+                Text(
+                    "이 녹음에는 재생 가능한 오디오가 없습니다.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                val progress = playbackState.durationMs
+                    ?.takeIf { it > 0 }
+                    ?.let { (playbackState.positionMs.toFloat() / it).coerceIn(0f, 1f) }
+                    ?: 0f
+                Text(
+                    "${formatPlaybackTime(playbackState.positionMs)} / ${playbackState.durationMs?.let(::formatPlaybackTime) ?: "--:--"}",
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+                TextButton(onClick = onTogglePlayback) {
+                    Text(if (playbackState.isPlaying) "일시정지" else "재생")
+                }
+            }
+            playbackState.errorMessage?.let { message ->
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+private fun formatPlaybackTime(millis: Long): String = "%02d:%02d".format(millis.coerceAtLeast(0) / 60_000, (millis.coerceAtLeast(0) / 1_000) % 60)
 
 @Composable
 private fun SummaryTab(recording: Recording, onSourceClick: (SummarySource) -> Unit) {
