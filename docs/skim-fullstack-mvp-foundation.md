@@ -377,8 +377,8 @@ UPLOADED
 
 ### Milestone 1 — Backend skeleton 및 계약
 
-1. `backend/`에 Kotlin Spring Boot 프로젝트 생성
-2. Docker Compose로 PostgreSQL과 Backend 실행
+1. 별도 저장소 `skim-server`에 Kotlin Spring Boot 프로젝트를 유지한다. Android 저장소에는 backend 복사본을 두지 않는다.
+2. `skim-server`의 Docker Compose로 PostgreSQL과 Backend를 실행한다.
 3. Flyway migration으로 `recordings`, `transcript_chunks`, `summary_items`, `summary_sources`, `todos`, `processing_jobs` 생성
 4. OpenAPI 문서 및 API error schema 작성
 5. recording / status / transcript / summary / todo API unit/integration test 작성
@@ -483,12 +483,13 @@ UPLOADED
 실제 프로젝트 구조가 확정된 뒤 README에 최신 명령을 기록한다.
 
 ```bash
-# Backend
-cd backend
+# Backend (separate skim-server repository)
+cd /Users/yuseob/Documents/other-project/skim-server
 ./gradlew test
 docker compose up --build
 
 # Android
+cd /Users/yuseob/Documents/android-project/skim-android
 ./gradlew :app:testDebugUnitTest :app:connectedDebugAndroidTest :app:assembleDebug
 ```
 
