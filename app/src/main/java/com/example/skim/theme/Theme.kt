@@ -1,50 +1,68 @@
 package com.example.skim.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80)
+private val DarkColorScheme = darkColorScheme(
+  primary = NightMoss,
+  onPrimary = Night,
+  primaryContainer = NightMossContainer,
+  onPrimaryContainer = NightMoss,
+  secondary = NightStraw,
+  onSecondary = Night,
+  secondaryContainer = NightStrawContainer,
+  onSecondaryContainer = NightStraw,
+  tertiary = NightEvidence,
+  onTertiary = Color(0xFF542410),
+  tertiaryContainer = NightEvidenceContainer,
+  onTertiaryContainer = NightEvidence,
+  background = Night,
+  onBackground = NightText,
+  surface = Night,
+  onSurface = NightText,
+  surfaceVariant = NightSurface,
+  onSurfaceVariant = NightMuted,
+  outline = NightOutline,
+  errorContainer = NightErrorContainer,
+  onErrorContainer = Color(0xFFFFDAD4),
+)
 
 private val LightColorScheme =
   lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = Moss,
     onPrimary = Color.White,
+    primaryContainer = MossContainer,
+    onPrimaryContainer = Color(0xFF1B3925),
+    secondary = Straw,
     onSecondary = Color.White,
+    secondaryContainer = StrawContainer,
+    onSecondaryContainer = Color(0xFF3A3500),
+    tertiary = Evidence,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    tertiaryContainer = EvidenceContainer,
+    onTertiaryContainer = Color(0xFF5A1D07),
+    background = Paper,
+    onBackground = Graphite,
+    surface = Paper,
+    onSurface = Graphite,
+    surfaceVariant = PaperVariant,
+    onSurfaceVariant = GraphiteMuted,
+    outline = Outline,
+    errorContainer = ErrorContainer,
+    onErrorContainer = Color(0xFF6B1F16),
   )
 
 @Composable
 fun SkimTheme(
   darkTheme: Boolean = isSystemInDarkTheme(),
-  // Dynamic color is available on Android 12+
-  dynamicColor: Boolean = true,
   content: @Composable () -> Unit,
 ) {
   val colorScheme =
-    when {
-      dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-        val context = LocalContext.current
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-      }
-      darkTheme -> DarkColorScheme
-      else -> LightColorScheme
-    }
+    if (darkTheme) DarkColorScheme else LightColorScheme
 
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

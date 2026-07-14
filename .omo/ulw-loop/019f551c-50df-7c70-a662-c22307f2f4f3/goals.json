@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "createdAt": "2026-07-12T07:09:02.833Z",
+  "updatedAt": "2026-07-12T07:09:02.833Z",
+  "briefPath": ".omo/ulw-loop/019f551c-50df-7c70-a662-c22307f2f4f3/brief.md",
+  "goalsPath": ".omo/ulw-loop/019f551c-50df-7c70-a662-c22307f2f4f3/goals.json",
+  "ledgerPath": ".omo/ulw-loop/019f551c-50df-7c70-a662-c22307f2f4f3/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-implement-the-previously-verified-sk",
+      "title": "Implement the previously verified Skim work end-to-end through M5: An...",
+      "objective": "Implement the previously verified Skim work end-to-end through M5: Android direct audio recording with runtime permission, start/stop/file upload UI; asynchronous server processing with Android polling, failure and retry; Media3 play/pause/progress/duration controls with timestamp seek/autoplay; automated Range 206 E2E coverage; Android tests for upload, polling, seek, and permission flow; and correct Android/server documentation. Preserve existing user changes; do not commit without approval.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Implement the previously verified Skim work end-to-end through M5: Android di...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 1.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "edge case (boundary/empty/malformed)",
+          "userModel": "edge",
+          "expectedEvidence": "Replace via revise_criterion with boundary or malformed-input proof for: Implement the previously verified Skim work end-to-end through M5: Android di....",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "regression: adjacent surface still works",
+          "userModel": "regression",
+          "expectedEvidence": "Replace via revise_criterion with regression proof for neighboring behavior after: Implement the previously verified Skim work end-to-end through M5: Android di....",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-12T07:09:02.833Z",
+      "updatedAt": "2026-07-12T07:09:02.833Z"
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/019f551c-50df-7c70-a662-c22307f2f4f3/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/019f551c-50df-7c70-a662-c22307f2f4f3/ledger.jsonl as the audit trail."
+}

@@ -1,0 +1,13 @@
+{
+  "goal": {
+    "threadId": "019f5c43-0dfe-73e1-ada5-f84f2fe18aa6",
+    "objective": "디자인 변경을 위해 시중 AI 음성 요약 앱의 이미지를 조사하고, Skim 프로젝트의 차별점을 살린 디자인 콘셉트 변경 계획을 수립한다.",
+    "status": "blocked",
+    "tokensUsed": 202213,
+    "timeUsedSeconds": 410,
+    "createdAt": 1783959411,
+    "updatedAt": 1783959822
+  },
+  "remainingTokens": null,
+  "completionBudgetReport": null
+}

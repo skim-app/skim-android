@@ -3,6 +3,7 @@ package com.example.skim.ui.main
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import com.example.skim.model.Recording
 import com.example.skim.model.SummaryItem
@@ -65,7 +66,7 @@ class MainScreenTest {
   @Test
   fun unavailableAudio_keepsTheSelectedTranscriptVisible() {
     composeTestRule.onNodeWithText("오디오 없는 녹음").performClick()
-    composeTestRule.onNodeWithText("▶ 00:00–00:06").performClick()
+    composeTestRule.onNodeWithContentDescription("근거 듣기 00:00–00:06").performClick()
 
     composeTestRule.onNodeWithText("오디오가 없어 재생할 수 없습니다.").assertExists()
     composeTestRule.onNodeWithText("선택한 근거").assertExists()

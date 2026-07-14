@@ -2,6 +2,7 @@ package com.example.skim.ui.main
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,9 +21,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -34,6 +38,15 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -46,7 +59,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -55,6 +67,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.provider.OpenableColumns
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -69,7 +84,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 private enum class SkimScreen { List, Detail }
-private enum class MainDestination(val label: String) { Home("홈"), Add("추가"), Library("라이브러리"), Settings("설정") }
+private enum class MainDestination(val label: String, val accessibilityLabel: String) {
+    Home("홈", "홈"),
+    Add("추가", "음성 파일 추가"),
+    Library("라이브러리", "라이브러리"),
+    Settings("설정", "설정"),
+}
 private data class PlaybackUiState(
     val positionMs: Long = 0,
     val durationMs: Long? = null,
@@ -189,9 +209,10 @@ private fun RecordingListScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = {
                     Column {
-                        Text("Skim", fontWeight = FontWeight.Bold)
+                        Text("Skim", style = MaterialTheme.typography.titleLarge)
                         Text(
                             text = "검증 가능한 AI 음성 노트",
                             style = MaterialTheme.typography.bodySmall,
@@ -207,7 +228,7 @@ private fun RecordingListScreen(
                     NavigationBarItem(
                         selected = destination == item,
                         onClick = { onDestinationChange(item) },
-                        icon = { Text(item.icon) },
+                        icon = { DestinationIcon(item) },
                         label = { Text(item.label) },
                     )
                 }
@@ -250,22 +271,59 @@ private fun RecordingListScreen(
                             modifier = Modifier.padding(top = 6.dp),
                         )
                     }
-                    if (visibleRecordings.isEmpty()) item { Text("아직 저장된 녹음이 없습니다.") }
+                    if (visibleRecordings.isEmpty()) {
+                        item {
+                            Card(
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text("첫 녹음을 추가해보세요", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        "파일을 올리면 요약과 timestamp 근거를 한 화면에서 확인할 수 있습니다.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Button(onClick = onPickAudio, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                                        Icon(Icons.Filled.Add, contentDescription = null)
+                                        Spacer(modifier = Modifier.size(8.dp))
+                                        Text("음성 파일 추가")
+                                    }
+                                }
+                            }
+                        }
+                    }
                     items(visibleRecordings, key = { it.id }) { recording ->
                         RecordingCard(recording = recording, onClick = { onRecordingClick(recording) })
                     }
                 }
                 MainDestination.Add -> item {
-                    Card(shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text("음성 파일을 선택해 업로드하세요", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             Text("업로드 후 처리 상태와 결과가 자동으로 갱신됩니다.", style = MaterialTheme.typography.bodyMedium)
-                            TextButton(onClick = onPickAudio) { Text("파일 선택 후 업로드") }
+                            Button(onClick = onPickAudio, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                                Icon(Icons.Filled.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.size(8.dp))
+                                Text("파일 선택 후 업로드")
+                            }
                         }
                     }
                 }
                 MainDestination.Settings -> item {
-                    Card(shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("처리 정책", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             Text("음성 파일은 서버에서 처리되며, 요약의 timestamp로 원문 근거를 확인할 수 있습니다.")
@@ -277,28 +335,40 @@ private fun RecordingListScreen(
     }
 }
 
-private val MainDestination.icon: String
-    get() = when (this) {
-        MainDestination.Home -> "⌂"
-        MainDestination.Add -> "+"
-        MainDestination.Library -> "≡"
-        MainDestination.Settings -> "i"
+@Composable
+private fun DestinationIcon(destination: MainDestination) {
+    val image = when (destination) {
+        MainDestination.Home -> Icons.Filled.Home
+        MainDestination.Add -> Icons.Filled.Add
+        MainDestination.Library -> Icons.AutoMirrored.Filled.LibraryBooks
+        MainDestination.Settings -> Icons.Filled.Settings
     }
+    Icon(imageVector = image, contentDescription = destination.accessibilityLabel)
+}
 
 @Composable
 private fun HeroCard() {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("요약을 믿기 전에, 근거를 확인하세요", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("요약을 믿기 전에,\n근거를 확인하세요", style = MaterialTheme.typography.headlineSmall)
             Text(
                 "Skim은 요약 항목의 timestamp를 원문 구간에 연결합니다.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
+            Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = 0.68f)) {
+                Text(
+                    text = "듣고, 훑고, 확인한다",
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }
@@ -307,17 +377,18 @@ private fun HeroCard() {
 private fun RecordingCard(recording: Recording, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+        Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusDot()
                 Text(recording.status, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Text("· ${recording.duration}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(recording.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(recording.title, style = MaterialTheme.typography.titleMedium)
             Text(recording.oneLineSummary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             recording.audioAssetName?.let { assetName ->
                 Text(
@@ -327,9 +398,16 @@ private fun RecordingCard(recording: Recording, onClick: () -> Unit) {
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(recording.createdAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(recording.createdAt.take(10), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.weight(1f))
-                Text("근거 ${recording.transcriptChunks.size}개 ›", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Surface(shape = RoundedCornerShape(999.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Text(
+                        "근거 ${recording.transcriptChunks.size}개",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
             }
         }
     }
@@ -413,6 +491,7 @@ private fun RecordingDetailScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 title = {
                     Column {
                         Text(recording.title, fontWeight = FontWeight.Bold)
@@ -423,7 +502,12 @@ private fun RecordingDetailScreen(
                         )
                     }
                 },
-                navigationIcon = { TextButton(onClick = onBack) { Text("‹  목록") } },
+                navigationIcon = {
+                    TextButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "목록으로 돌아가기")
+                        Text("목록")
+                    }
+                },
             )
         },
     ) { paddingValues ->
@@ -448,8 +532,8 @@ private fun RecordingDetailScreen(
                 },
             )
             TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("요약") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("원문") })
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Skim") })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("근거") })
             }
             when (selectedTab) {
                 0 -> SummaryTab(
@@ -473,8 +557,9 @@ private fun PlaybackControls(
     onTogglePlayback: () -> Unit,
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -497,8 +582,10 @@ private fun PlaybackControls(
                     style = MaterialTheme.typography.labelLarge,
                 )
                 LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-                TextButton(onClick = onTogglePlayback) {
-                    Text(if (playbackState.isPlaying) "일시정지" else "재생")
+                Button(onClick = onTogglePlayback, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                    Icon(if (playbackState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text(if (playbackState.isPlaying) "일시정지" else "근거 듣기")
                 }
             }
             playbackState.errorMessage?.let { message ->
@@ -522,7 +609,11 @@ private fun SummaryTab(recording: Recording, onSourceClick: (SummarySource) -> U
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)),
+            ) {
                 Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("한 줄 요약", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
                     Text(recording.oneLineSummary, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -537,14 +628,29 @@ private fun SummaryTab(recording: Recording, onSourceClick: (SummarySource) -> U
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SummaryCard(item: SummaryItem, onSourceClick: (SummarySource) -> Unit) {
-    Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.42f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(item.category, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(item.text, style = MaterialTheme.typography.bodyLarge)
             Text("원문 근거", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item.sources.forEach { source ->
-                    AssistChip(onClick = { onSourceClick(source) }, label = { Text("▶ ${source.label}") })
+                    AssistChip(
+                        onClick = { onSourceClick(source) },
+                        modifier = Modifier.semantics { contentDescription = "근거 듣기 ${source.label}" },
+                        label = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.size(4.dp))
+                                Text(source.label)
+                            }
+                        },
+                    )
                 }
             }
         }
@@ -595,7 +701,9 @@ private fun TranscriptChunkCard(chunk: TranscriptChunk, highlighted: Boolean) {
     Card(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(22.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { if (highlighted) stateDescription = "선택한 근거" },
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -620,7 +728,7 @@ private fun TranscriptChunkCard(chunk: TranscriptChunk, highlighted: Boolean) {
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
 private fun MainScreenPreview() {
-    SkimTheme(dynamicColor = false) {
+    SkimTheme {
         MainScreen(uiState = SkimUiState.Content(emptyList()), onRefresh = {})
     }
 }

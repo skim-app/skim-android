@@ -1,0 +1,11 @@
+ M README.md
+?? .idea/
+?? .omo/
+--- product-code diff ---
+README.md
+--- plan scope guards ---
+11:**What it will NOT do:** It will not add recording, meeting bots, chat, templates, sharing, search, collaboration, or backend/model work. It will not copy another app's imagery, branding, or copy.
+31:### Must NOT have (guardrails, anti-slop, scope boundaries)
+32:- No microphone capture, meeting bot, AI chat, collaboration, templates, confidence correction, search, sharing/export, or data/API/schema change.
+33:- No competitor assets, copied copy, logo, or pixel tracing; no blue/purple SaaS gradient or Unicode/emoji navigation symbols.
+34:- No new navigation framework, screen model, or abstraction beyond the smallest existing `MainScreen.kt` changes.

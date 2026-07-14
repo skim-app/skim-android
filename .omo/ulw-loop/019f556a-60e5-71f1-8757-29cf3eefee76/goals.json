@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "evidenceLayoutVersion": 2,
+  "createdAt": "2026-07-12T08:25:12.955Z",
+  "updatedAt": "2026-07-12T08:26:54.547Z",
+  "briefPath": ".omo/ulw-loop/019f556a-60e5-71f1-8757-29cf3eefee76/brief.md",
+  "goalsPath": ".omo/ulw-loop/019f556a-60e5-71f1-8757-29cf3eefee76/goals.json",
+  "ledgerPath": ".omo/ulw-loop/019f556a-60e5-71f1-8757-29cf3eefee76/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-implement-skim-s-m1-through-m5-proje",
+      "title": "Implement Skim's M1 through M5 project structure now, preserving exis...",
+      "objective": "Implement Skim's M1 through M5 project structure now, preserving existing user changes and without committing. Build the smallest functional architecture for: a monorepo Kotlin/Spring Boot backend skeleton with database/API/processing/audio boundaries; Android direct recording permission and upload structure; processing status, retry, and polling structure; and Media3 playback, progress, timestamp seek, and transcript highlight structure. Defer adding or running tests and end-to-end/manual verification until these structural milestones are implemented, per the latest user request.",
+      "status": "pending",
+      "successCriteria": [
+        {
+          "id": "C001",
+          "scenario": "happy path for: Implement Skim's M1 through M5 project structure now, preserving existing use...",
+          "userModel": "happy",
+          "expectedEvidence": "Replace via revise_criterion with observable happy-path proof for goal 1.",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C002",
+          "scenario": "Run rg -n \"RECORD_AUDIO|AudioRecord|MediaRecorder|retry|isPlaying|seekTo|audio\" app/src/main/java/com/example/skim; PASS when runtime-permission/recording, retry/status, and Media3 playback seams are each present in Android source.",
+          "userModel": "edge",
+          "expectedEvidence": ".omo/ulw-loop/evidence/m1-m5-android-seams.txt",
+          "essential": true,
+          "capturedEvidence": null,
+          "status": "pending"
+        },
+        {
+          "id": "C003",
+          "scenario": "Later, run ./gradlew :app:assembleDebug and the backend Gradle compile task; PASS when both exit 0 without changing README.md or .idea/.",
+          "userModel": "regression",
+          "expectedEvidence": ".omo/ulw-loop/evidence/m1-m5-build.txt",
+          "essential": false,
+          "capturedEvidence": null,
+          "status": "pending"
+        }
+      ],
+      "attempt": 0,
+      "createdAt": "2026-07-12T08:25:12.955Z",
+      "updatedAt": "2026-07-12T08:26:54.547Z"
+    }
+  ],
+  "codexObjective": "Complete the durable ulw-loop plan in .omo/ulw-loop/019f556a-60e5-71f1-8757-29cf3eefee76/goals.json, including later accepted/appended stories, under the original brief constraints; use .omo/ulw-loop/019f556a-60e5-71f1-8757-29cf3eefee76/ledger.jsonl as the audit trail."
+}
